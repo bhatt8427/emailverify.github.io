@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Bulk Email Verification Tool with CSV Export">
+    <title>Bulk Email Verifier | Premium Tool</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="background-blobs" aria-hidden="true">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <main class="dashboard glass-effect">
+        <header class="dashboard-header">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" class="brand-icon" aria-hidden="true">
+                    <path
+                        d="M22 17a2 2 0 0 1-2 2h-2v2a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2v3a4 4 0 0 0 4 4h3l3 3h3a2 2 0 0 0 2-2v-2h2a2 2 0 0 1 2 2Z"
+                        fill="currentColor" fill-opacity="0.2" />
+                    <path d="M15 7a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h7Z"
+                        stroke="currentColor" stroke-width="2" />
+                    <path d="M7 11V7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4" stroke="currentColor" stroke-width="2" />
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" />
+                </svg>
+                <h1>EmailVerifier<span class="highlight">Pro</span></h1>
+            </div>
+            <p class="subtitle">Validate single emails or specific bulk lists instantly.</p>
+        </header>
+
+        <section class="controls" aria-label="Verification Controls">
+            <div class="tabs" role="tablist">
+                <button class="tab-btn" data-tab="bulk" role="tab" aria-selected="false" aria-controls="bulk-tab">Bulk
+                    Verification</button>
+                <button class="tab-btn active" data-tab="single" role="tab" aria-selected="true"
+                    aria-controls="single-tab">Single Verification</button>
+            </div>
+
+            <div class="tab-content" id="bulk-tab" role="tabpanel">
+                <div class="drop-zone" id="drop-zone" aria-label="Drag and drop a file here or click to upload">
+                    <div class="drop-zone-content">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p>Drag & Drop CSV or TXT file here</p>
+                        <span>or click to browse files</span>
+                    </div>
+                    <input type="file" id="file-input" accept=".csv,.txt" hidden>
+                </div>
+                <div class="input-divider"><span>OR</span></div>
+                <div class="input-wrapper">
+                    <label for="bulk-input">Paste email addresses (one per line):</label>
+                    <textarea id="bulk-input"
+                        placeholder="alice@example.com&#10;bob@gmail.com&#10;charlie@business.net"></textarea>
+                </div>
+                <div class="actions">
+                    <button id="verify-bulk-btn" class="btn primary">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" aria-hidden="true">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        Verify List
+                    </button>
+                    <button id="clear-btn" class="btn secondary">Clear</button>
+                </div>
+            </div>
+
+            <div class="tab-content active" id="single-tab" role="tabpanel">
+                <div class="input-wrapper">
+                    <label for="single-input">Enter a single email:</label>
+                    <input type="email" id="single-input" placeholder="name@company.com">
+                </div>
+                <div class="actions">
+                    <button id="verify-single-btn" class="btn primary">Verify Email</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="results-area hidden" id="results-area" aria-live="polite">
+            <div class="results-header">
+                <h2>Verification Results (<span id="result-count">0</span>)</h2>
+                <button id="export-btn" class="btn outline" aria-label="Export results to CSV">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        aria-hidden="true">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Export .CSV
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table id="results-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">Email Address</th>
+                            <th style="width: 20%;">Verification Steps</th>
+                            <th style="width: 30%;">Reason</th>
+                            <th style="width: 20%;">Score & Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="toast">CSV Exported Successfully!</div>
+    <script src="script.js"></script>
+</body>
+
+</html>
