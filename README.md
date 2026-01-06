@@ -24,7 +24,7 @@ A premium, glassmorphism-style web application for bulk email verification. This
 
 ### 2. Clone the Repository
 ```bash
-git clone https://github.com/your-username/email-verifier-pro.git
+git clone https://github.com/bhatt8427/emailverify.github.io.git
 cd email-verifier-pro
 ```
 
