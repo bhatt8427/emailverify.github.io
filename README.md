@@ -16,42 +16,49 @@ A premium, glassmorphism-style web application for bulk email verification. This
 
 ## 🛠️ Installation & Setup
 
-### 1. Prerequisites
-- **Python 3.8+** installed on your system.
-- Outbound access to **Port 25** (for SMTP Pinging). 
-  > [!NOTE]
-  > Some ISPs or cloud providers (AWS, Azure) block Port 25. If blocked, users will be marked as "Risky".
+### Option 1: Docker (Recommended)
 
-### 2. Clone the Repository
-```bash
-git clone https://github.com/bhatt8427/emailverify.github.io.git
-cd email-verifier-pro
-```
+Run the application in an isolated container without local restrictions (solves ISP Port 25 blocking).
 
-### 3. Install Backend Dependencies
-```bash
-pip install -r requirements.txt
-```
+**Prerequisites:** [Docker Desktop](https://www.docker.com/products/docker-desktop) installed and running.
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/bhatt8427/emailverify.github.io.git
+   cd emailverify.github.io
+   ```
+
+2. **Run with Docker Compose**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Access the App**
+   Open **[http://localhost:5000](http://localhost:5000)**
+
+**Useful Commands:**
+- View logs: `docker-compose logs -f`
+- Stop app: `docker-compose down`
+- Rebuild: `docker-compose up -d --build`
 
 ---
 
-## 🚀 Running the App
+### Option 2: Manual Installation (Python)
 
-You need to run **two** separate servers: one for the backend API and one for the frontend UI.
+**Prerequisites:** Python 3.8+ and outbound access to Port 25.
 
-### Step 1: Start the Backend (Flask)
-```bash
-python app.py
-```
-The backend will run on `http://localhost:5000`.
+1. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### Step 2: Start the Frontend
-Since the app uses modern Web APIs, it should be served via a local server to avoid CORS/File-System issues.
-```bash
-python -m http.server 8000
-```
-Open your browser and navigate to:
-👉 **[http://localhost:8000](http://localhost:8000)**
+2. **Start Backend**
+   ```bash
+   python app.py
+   ```
+
+3. **Start Frontend (Optional if running locally)**
+   The backend now serves the frontend automatically at `http://localhost:5000`.
 
 ---
 

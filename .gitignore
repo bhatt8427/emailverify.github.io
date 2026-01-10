@@ -26,19 +26,12 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Git
-.git/
-.gitignore
-
 # Docker
 .dockerignore
-Dockerfile
-docker-compose.yml
+DOCKER.md
 
 # Test files
 reproduce_issue.py
 test_bulk.py
 debug_smtp.py
-
-# Data directory
 data/

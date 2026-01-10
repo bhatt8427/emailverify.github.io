@@ -7,13 +7,58 @@ document.addEventListener('DOMContentLoaded', () => {
     const verifyBulkBtn = document.getElementById('verify-bulk-btn');
     const verifySingleBtn = document.getElementById('verify-single-btn');
     const clearBtn = document.getElementById('clear-btn');
+    const toast = document.getElementById('toast');
+    const statsContainer = document.getElementById('stats-container');
+    const statTotal = document.getElementById('stat-total');
+    const statValid = document.getElementById('stat-valid');
+    const statInvalid = document.getElementById('stat-invalid');
+    const statRisky = document.getElementById('stat-risky');
+    const statCatchAll = document.getElementById('stat-catchall');
     const resultsArea = document.getElementById('results-area');
     const resultsTableBody = document.querySelector('#results-table tbody');
     const resultCount = document.getElementById('result-count');
     const exportBtn = document.getElementById('export-btn');
-    const toast = document.getElementById('toast');
+    const copyBtn = document.getElementById('copy-btn');
+    const exportXlsxBtn = document.getElementById('export-xlsx-btn');
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
+
+    // Permission Modal Logic
+    const permissionModal = document.getElementById('permission-modal');
+    const grantBtn = document.getElementById('grant-btn');
+
+    // Show modal on load if not already granted in this session
+    if (!sessionStorage.getItem('networkPermissionGranted')) {
+        setTimeout(() => {
+            permissionModal.classList.add('active');
+        }, 500); // Small delay for smooth entrance
+    }
+
+    grantBtn.addEventListener('click', () => {
+        sessionStorage.setItem('networkPermissionGranted', 'true');
+        permissionModal.classList.remove('active');
+        // Optional: Show a success toast
+        showToast('Network Permissions Granted', 'success');
+    });
+
+    // Dark Mode Toggle
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+
+    // Check for saved dark mode preference
+    if (localStorage.getItem('darkMode') === 'enabled') {
+        document.body.classList.add('dark-mode');
+    }
+
+    darkModeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+
+        // Save preference
+        if (document.body.classList.contains('dark-mode')) {
+            localStorage.setItem('darkMode', 'enabled');
+        } else {
+            localStorage.setItem('darkMode', 'disabled');
+        }
+    });
 
     let currentResults = [];
 
@@ -43,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // Split by newlines, commas, or semicolons
         const emails = text.split(/[\n,;]+/).map(e => e.trim()).filter(e => e);
-        processEmails(emails);
+        processEmails(emails, true);
     });
 
     verifySingleBtn.addEventListener('click', () => {
@@ -52,11 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Please enter an email.');
             return;
         }
-        processEmails([email]);
+        processEmails([email], false);
     });
 
-    // Export Button
+    // Export Buttons
     exportBtn.addEventListener('click', exportToCSV);
+    copyBtn.addEventListener('click', copyResults);
+    exportXlsxBtn.addEventListener('click', exportToXLSX);
 
     // File Upload Zone
     dropZone.addEventListener('click', () => fileInput.click());
@@ -104,27 +151,108 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Core Logic ---
 
-    async function processEmails(emailList) {
+    async function processEmails(emailList, isBulk = false) {
         // Reset UI
         resultsTableBody.innerHTML = '';
         currentResults = [];
         resultsArea.classList.remove('hidden');
-        resultCount.innerText = 'Processing...';
 
-        // Process each email
-        for (const email of emailList) {
-            const result = await verifyEmailBackend(email);
-            currentResults.push(result);
-            appendRow(result);
+        const total = emailList.length;
+        let processed = 0;
+        resultCount.innerText = `0 / ${total}`;
+
+        // Show export buttons
+        if (total > 0) {
+            exportBtn.style.display = 'inline-flex';
+            copyBtn.style.display = 'inline-flex';
+            exportXlsxBtn.style.display = 'inline-flex';
+        } else {
+            exportBtn.style.display = 'none';
+            copyBtn.style.display = 'none';
+            exportXlsxBtn.style.display = 'none';
         }
 
-        resultCount.innerText = currentResults.length;
+        if (isBulk) {
+            // Processing in Chunks
+            const CHUNK_SIZE = 5;
+            statsContainer.style.display = 'flex'; // Show stats immediately (zeros)
+            updateStatsUI(calculateStats([])); // Reset stats to 0
+
+            for (let i = 0; i < emailList.length; i += CHUNK_SIZE) {
+                const chunk = emailList.slice(i, i + CHUNK_SIZE);
+
+                try {
+                    const response = await fetch('/bulk-verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ emails: chunk })
+                    });
+
+                    if (!response.ok) throw new Error('Bulk verification failed');
+
+                    const data = await response.json();
+                    const batchResults = data.results || [];
+
+                    currentResults.push(...batchResults);
+                    processed += chunk.length;
+
+                    // Update UI incrementally
+                    batchResults.forEach(result => appendRow(result));
+                    resultCount.innerText = `${processed} / ${total}`;
+
+                    const stats = calculateStats(currentResults);
+                    updateStatsUI(stats);
+
+                } catch (error) {
+                    console.error("Bulk error:", error);
+                    // Continue with next chunk even if one fails? Or stop? 
+                    // Let's add error rows for this chunk so counts match
+                    chunk.forEach(email => {
+                        const errResult = { email, status: 'error', reason: 'Network/Server Error' };
+                        currentResults.push(errResult);
+                        appendRow(errResult);
+                    });
+                    processed += chunk.length;
+                    resultCount.innerText = `${processed} / ${total}`;
+                }
+            }
+        } else {
+            // Single Processing
+            resultCount.innerText = 'Processing...';
+            statsContainer.style.display = 'none';
+            for (const email of emailList) {
+                const result = await verifyEmailBackend(email);
+                currentResults.push(result);
+                appendRow(result);
+            }
+            resultCount.innerText = currentResults.length;
+        }
+    }
+
+    function calculateStats(results) {
+        let stats = { total: results.length, valid: 0, invalid: 0, risky: 0, catch_all: 0 };
+        results.forEach(r => {
+            if (r.status === 'valid') stats.valid++;
+            else if (r.status === 'invalid') stats.invalid++;
+            else if (r.status === 'catch-all') stats.catch_all++;
+            else stats.risky++; // unknown, risky
+        });
+        return stats;
+    }
+
+    function updateStatsUI(stats) {
+        statsContainer.style.display = 'flex'; // Turn grid back on
+        statTotal.innerText = stats.total;
+        statValid.innerText = stats.valid;
+        statInvalid.innerText = stats.invalid;
+        statRisky.innerText = stats.risky;
+        statCatchAll.innerText = stats.catch_all;
     }
 
     // Call Backend
     async function verifyEmailBackend(email) {
         try {
-            const response = await fetch('http://localhost:5000/verify', {
+            const response = await fetch('/verify', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -258,6 +386,62 @@ document.addEventListener('DOMContentLoaded', () => {
         URL.revokeObjectURL(url);
 
         showToast();
+    }
+
+    function copyResults() {
+        if (currentResults.length === 0) {
+            alert("No results to copy!");
+            return;
+        }
+
+        // Create tab-separated text for easy pasting into Excel/Sheets
+        let text = 'Email\tStatus\tReason\tScore\tProvider\tRisk Level\n';
+        currentResults.forEach(r => {
+            text += `${r.email}\t${r.status}\t${r.reason}\t${r.score}\t${r.provider}\t${r.risk_level}\n`;
+        });
+
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Results copied to clipboard!', 'success');
+        }).catch(err => {
+            console.error('Copy failed:', err);
+            alert('Failed to copy results. Please try again.');
+        });
+    }
+
+    function exportToXLSX() {
+        if (currentResults.length === 0) {
+            alert("No results to export!");
+            return;
+        }
+
+        // Create a simple XLSX-compatible HTML table
+        let html = '<table><thead><tr>';
+        html += '<th>Email</th><th>Status</th><th>Reason</th><th>Score</th><th>Provider</th><th>Risk Level</th>';
+        html += '</tr></thead><tbody>';
+
+        currentResults.forEach(r => {
+            html += '<tr>';
+            html += `<td>${r.email}</td>`;
+            html += `<td>${r.status}</td>`;
+            html += `<td>${r.reason}</td>`;
+            html += `<td>${r.score}</td>`;
+            html += `<td>${r.provider}</td>`;
+            html += `<td>${r.risk_level}</td>`;
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+
+        // Create blob and download
+        const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `email-verification-${Date.now()}.xls`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        showToast('XLSX Exported Successfully!', 'success');
     }
 
     function showToast(message = 'Results exported!') {

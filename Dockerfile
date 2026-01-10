@@ -1,17 +1,32 @@
-# Use an official Python runtime as a parent image
+# Use official Python runtime as base
 FROM python:3.11-slim
 
-# Set the working directory in the container
+# Set working directory
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install any needed packages specified in requirements.txt
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Make port 5000 available to the world outside this container
+# Copy application files
+COPY . .
+
+# Create directory for database and logs
+RUN mkdir -p /app/data
+
+# Expose port
 EXPOSE 5000
 
-# Run app.py when the container launches
+# Set environment variables
+ENV FLASK_APP=app.py
+ENV PYTHONUNBUFFERED=1
+
+# Run the application
 CMD ["python", "app.py"]

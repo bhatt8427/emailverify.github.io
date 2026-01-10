@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  email-verifier:
+    build: .
+    container_name: email-verification-tool
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persist database and logs
+      - ./data:/app/data
+      - ./email_verification.db:/app/email_verification.db
+      - ./email_verification.log:/app/email_verification.log
+    environment:
+      - FLASK_ENV=production
+      - PORT=5000
+    restart: unless-stopped
+    networks:
+      - email-verifier-network
+
+networks:
+  email-verifier-network:
+    driver: bridge
