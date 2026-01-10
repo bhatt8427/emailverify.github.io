@@ -34,4 +34,5 @@ DOCKER.md
 reproduce_issue.py
 test_bulk.py
 debug_smtp.py
+test_full_suite.py
 data/
